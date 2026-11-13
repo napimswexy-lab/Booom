@@ -1,6 +1,7 @@
--- PS99 Sniper · CoreGui Fix · LO build ♥
+-- PS99 Sniper · Auto-Discover + Instant Hop · LO ♥
 
 local RS   = game:GetService("ReplicatedStorage")
+local TS   = game:GetService("TeleportService")
 local RunS = game:GetService("RunService")
 local LP   = game.Players.LocalPlayer
 
@@ -15,18 +16,14 @@ local function corner(p, r)
     local c = Instance.new("UICorner")
     c.CornerRadius = UDim.new(0, r or 8)
     c.Parent = p
-    return c
 end
 
 local SG = Instance.new("ScreenGui")
-SG.Name = "PS99Sniper_LO"
+SG.Name = "PS99Sniper"
 SG.ResetOnSpawn = false
 pcall(function() SG.Parent = game:GetService("CoreGui") end)
 if not SG.Parent then SG.Parent = LP:WaitForChild("PlayerGui") end
 
--- ══════════════════════════════════
---  CONFIG FRAME
--- ══════════════════════════════════
 local CF = Instance.new("Frame")
 CF.Size = UDim2.new(0, 280, 0, 262)
 CF.Position = UDim2.new(0.5, -140, 0.5, -131)
@@ -36,21 +33,14 @@ CF.Parent = SG
 corner(CF, 12)
 
 local cBar = Instance.new("Frame")
-cBar.Size = UDim2.new(1, 0, 0, 36)
+cBar.Size = UDim2.new(1,0,0,36)
 cBar.BackgroundColor3 = PURPLE
 cBar.BorderSizePixel = 0
 cBar.Parent = CF
 corner(cBar, 12)
 
-local cFix = Instance.new("Frame")
-cFix.Size = UDim2.new(1, 0, 0, 12)
-cFix.Position = UDim2.new(0, 0, 1, -12)
-cFix.BackgroundColor3 = PURPLE
-cFix.BorderSizePixel = 0
-cFix.Parent = cBar
-
 local cTitle = Instance.new("TextLabel")
-cTitle.Size = UDim2.new(1, 0, 1, 0)
+cTitle.Size = UDim2.new(1,0,1,0)
 cTitle.BackgroundTransparency = 1
 cTitle.Text = "🎯  PS99 Sniper"
 cTitle.TextColor3 = WHITE
@@ -58,303 +48,283 @@ cTitle.Font = Enum.Font.GothamBold
 cTitle.TextSize = 14
 cTitle.Parent = cBar
 
--- Item label + input
-local iLbl = Instance.new("TextLabel")
-iLbl.Size = UDim2.new(1,-16,0,20)
-iLbl.Position = UDim2.new(0,8,0,44)
-iLbl.BackgroundTransparency = 1
-iLbl.Text = "Item Adı"
-iLbl.TextSize = 11
-iLbl.TextColor3 = GREY
-iLbl.Font = Enum.Font.Gotham
-iLbl.TextXAlignment = Enum.TextXAlignment.Left
-iLbl.Parent = CF
+local function mkLabel(par, txt, posY, color, bold)
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1,-16,0,20)
+    l.Position = UDim2.new(0,8,0,posY)
+    l.BackgroundTransparency = 1
+    l.Text = txt
+    l.TextSize = 11
+    l.TextColor3 = color or GREY
+    l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.Parent = par
+    return l
+end
 
-local iBg = Instance.new("Frame")
-iBg.Size = UDim2.new(1,-16,0,32)
-iBg.Position = UDim2.new(0,8,0,64)
-iBg.BackgroundColor3 = Color3.fromRGB(25,25,35)
-iBg.Parent = CF
-corner(iBg, 6)
+local function mkInput(par, hint, posY)
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1,-16,0,32)
+    bg.Position = UDim2.new(0,8,0,posY)
+    bg.BackgroundColor3 = Color3.fromRGB(25,25,35)
+    bg.Parent = par
+    corner(bg,6)
+    local tb = Instance.new("TextBox")
+    tb.Size = UDim2.new(1,-12,1,0)
+    tb.Position = UDim2.new(0,6,0,0)
+    tb.BackgroundTransparency = 1
+    tb.PlaceholderText = hint
+    tb.PlaceholderColor3 = Color3.fromRGB(90,90,100)
+    tb.TextColor3 = WHITE
+    tb.Font = Enum.Font.Gotham
+    tb.TextSize = 12
+    tb.TextXAlignment = Enum.TextXAlignment.Left
+    tb.ClearTextOnFocus = false
+    tb.Parent = bg
+    return tb
+end
 
-local itemInput = Instance.new("TextBox")
-itemInput.Size = UDim2.new(1,-12,1,0)
-itemInput.Position = UDim2.new(0,6,0,0)
-itemInput.BackgroundTransparency = 1
-itemInput.PlaceholderText = "örn: Treat Magnet"
-itemInput.PlaceholderColor3 = Color3.fromRGB(90,90,100)
-itemInput.TextColor3 = WHITE
-itemInput.Font = Enum.Font.Gotham
-itemInput.TextSize = 12
-itemInput.TextXAlignment = Enum.TextXAlignment.Left
-itemInput.ClearTextOnFocus = false
-itemInput.Parent = iBg
+local function mkBtn(par, txt, color, posY, h)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1,-16,0,h or 34)
+    b.Position = UDim2.new(0,8,0,posY)
+    b.BackgroundColor3 = color
+    b.TextColor3 = WHITE
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 13
+    b.Text = txt
+    b.Parent = par
+    corner(b,7)
+    return b
+end
 
--- Price label + input
-local pLbl = Instance.new("TextLabel")
-pLbl.Size = UDim2.new(1,-16,0,20)
-pLbl.Position = UDim2.new(0,8,0,104)
-pLbl.BackgroundTransparency = 1
-pLbl.Text = "Maksimum Fiyat (Gems)"
-pLbl.TextSize = 11
-pLbl.TextColor3 = GREY
-pLbl.Font = Enum.Font.Gotham
-pLbl.TextXAlignment = Enum.TextXAlignment.Left
-pLbl.Parent = CF
+mkLabel(CF, "Item Adı", 44)
+local itemInput = mkInput(CF, "örn: Treat Magnet", 64)
+mkLabel(CF, "Maksimum Fiyat (Gems)", 104)
+local priceInput = mkInput(CF, "örn: 300000", 124)
+mkLabel(CF, "Server'da bulunamazsa otomatik hop", 164, Color3.fromRGB(120,120,140))
 
-local pBg = Instance.new("Frame")
-pBg.Size = UDim2.new(1,-16,0,32)
-pBg.Position = UDim2.new(0,8,0,124)
-pBg.BackgroundColor3 = Color3.fromRGB(25,25,35)
-pBg.Parent = CF
-corner(pBg, 6)
+local hopEnabled = true
+local hopBg = Instance.new("Frame")
+hopBg.Size = UDim2.new(1,-16,0,28)
+hopBg.Position = UDim2.new(0,8,0,182)
+hopBg.BackgroundColor3 = Color3.fromRGB(25,25,35)
+hopBg.Parent = CF
+corner(hopBg,6)
 
-local priceInput = Instance.new("TextBox")
-priceInput.Size = UDim2.new(1,-12,1,0)
-priceInput.Position = UDim2.new(0,6,0,0)
-priceInput.BackgroundTransparency = 1
-priceInput.PlaceholderText = "örn: 300000"
-priceInput.PlaceholderColor3 = Color3.fromRGB(90,90,100)
-priceInput.TextColor3 = WHITE
-priceInput.Font = Enum.Font.Gotham
-priceInput.TextSize = 12
-priceInput.TextXAlignment = Enum.TextXAlignment.Left
-priceInput.ClearTextOnFocus = false
-priceInput.Parent = pBg
+local hopOn = Instance.new("TextButton")
+hopOn.Size = UDim2.new(0.5,-2,1,0)
+hopOn.Position = UDim2.new(0,2,0,0)
+hopOn.BackgroundColor3 = GREEN
+hopOn.TextColor3 = Color3.fromRGB(10,10,10)
+hopOn.Font = Enum.Font.GothamBold
+hopOn.TextSize = 11
+hopOn.Text = "Hop: AÇIK"
+hopOn.Parent = hopBg
+corner(hopOn,5)
 
--- Eşleşme toggle
-local mLbl = Instance.new("TextLabel")
-mLbl.Size = UDim2.new(1,-16,0,20)
-mLbl.Position = UDim2.new(0,8,0,164)
-mLbl.BackgroundTransparency = 1
-mLbl.Text = "Eşleşme Tipi"
-mLbl.TextSize = 11
-mLbl.TextColor3 = GREY
-mLbl.Font = Enum.Font.Gotham
-mLbl.TextXAlignment = Enum.TextXAlignment.Left
-mLbl.Parent = CF
+local hopOff = Instance.new("TextButton")
+hopOff.Size = UDim2.new(0.5,-2,1,0)
+hopOff.Position = UDim2.new(0.5,0,0,0)
+hopOff.BackgroundColor3 = Color3.fromRGB(30,30,45)
+hopOff.TextColor3 = GREY
+hopOff.Font = Enum.Font.Gotham
+hopOff.TextSize = 11
+hopOff.Text = "Hop: KAPALI"
+hopOff.Parent = hopBg
+corner(hopOff,5)
 
-local tFrame = Instance.new("Frame")
-tFrame.Size = UDim2.new(1,-16,0,28)
-tFrame.Position = UDim2.new(0,8,0,184)
-tFrame.BackgroundColor3 = Color3.fromRGB(25,25,35)
-tFrame.Parent = CF
-corner(tFrame, 6)
-
-local exactMode = false
-
-local fuzzyB = Instance.new("TextButton")
-fuzzyB.Size = UDim2.new(0.5,-2,1,0)
-fuzzyB.Position = UDim2.new(0,2,0,0)
-fuzzyB.BackgroundColor3 = PURPLE
-fuzzyB.TextColor3 = WHITE
-fuzzyB.Font = Enum.Font.GothamBold
-fuzzyB.TextSize = 11
-fuzzyB.Text = "İçerik Ara"
-fuzzyB.Parent = tFrame
-corner(fuzzyB, 5)
-
-local exactB = Instance.new("TextButton")
-exactB.Size = UDim2.new(0.5,-2,1,0)
-exactB.Position = UDim2.new(0.5,0,0,0)
-exactB.BackgroundColor3 = Color3.fromRGB(30,30,45)
-exactB.TextColor3 = GREY
-exactB.Font = Enum.Font.Gotham
-exactB.TextSize = 11
-exactB.Text = "Tam Eşleşme"
-exactB.Parent = tFrame
-corner(exactB, 5)
-
-fuzzyB.MouseButton1Click:Connect(function()
-    exactMode = false
-    fuzzyB.BackgroundColor3 = PURPLE; fuzzyB.TextColor3 = WHITE; fuzzyB.Font = Enum.Font.GothamBold
-    exactB.BackgroundColor3 = Color3.fromRGB(30,30,45); exactB.TextColor3 = GREY; exactB.Font = Enum.Font.Gotham
+hopOn.MouseButton1Click:Connect(function()
+    hopEnabled = true
+    hopOn.BackgroundColor3 = GREEN; hopOn.TextColor3 = Color3.fromRGB(10,10,10); hopOn.Font = Enum.Font.GothamBold
+    hopOff.BackgroundColor3 = Color3.fromRGB(30,30,45); hopOff.TextColor3 = GREY; hopOff.Font = Enum.Font.Gotham
 end)
-exactB.MouseButton1Click:Connect(function()
-    exactMode = true
-    exactB.BackgroundColor3 = PURPLE; exactB.TextColor3 = WHITE; exactB.Font = Enum.Font.GothamBold
-    fuzzyB.BackgroundColor3 = Color3.fromRGB(30,30,45); fuzzyB.TextColor3 = GREY; fuzzyB.Font = Enum.Font.Gotham
+hopOff.MouseButton1Click:Connect(function()
+    hopEnabled = false
+    hopOff.BackgroundColor3 = RED; hopOff.TextColor3 = WHITE; hopOff.Font = Enum.Font.GothamBold
+    hopOn.BackgroundColor3 = Color3.fromRGB(30,30,45); hopOn.TextColor3 = GREY; hopOn.Font = Enum.Font.Gotham
 end)
 
--- Başlat butonu
-local startBtn = Instance.new("TextButton")
-startBtn.Size = UDim2.new(1,-16,0,36)
-startBtn.Position = UDim2.new(0,8,0,220)
-startBtn.BackgroundColor3 = GREEN
-startBtn.TextColor3 = WHITE
-startBtn.Font = Enum.Font.GothamBold
-startBtn.TextSize = 13
-startBtn.Text = "▶  SNIPER BAŞLAT"
-startBtn.Parent = CF
-corner(startBtn, 7)
+local startBtn = mkBtn(CF, "▶  SNIPER BAŞLAT", PURPLE, 218, 36)
 
--- ══════════════════════════════════
---  STATUS FRAME
--- ══════════════════════════════════
 local SF = Instance.new("Frame")
-SF.Size = UDim2.new(0, 260, 0, 190)
-SF.Position = UDim2.new(0.5, -130, 0.5, -95)
+SF.Size = UDim2.new(0, 265, 0, 210)
+SF.Position = UDim2.new(0.5,-132,0.5,-105)
 SF.BackgroundColor3 = DARK
 SF.BorderSizePixel = 0
 SF.Visible = false
 SF.Parent = SG
-corner(SF, 12)
+corner(SF,12)
 
 local sBar = Instance.new("Frame")
 sBar.Size = UDim2.new(1,0,0,36)
 sBar.BackgroundColor3 = PURPLE
 sBar.BorderSizePixel = 0
 sBar.Parent = SF
-corner(sBar, 12)
+corner(sBar,12)
 
-local sBarFix = Instance.new("Frame")
-sBarFix.Size = UDim2.new(1,0,0,12)
-sBarFix.Position = UDim2.new(0,0,1,-12)
-sBarFix.BackgroundColor3 = PURPLE
-sBarFix.BorderSizePixel = 0
-sBarFix.Parent = sBar
+local sTitleL = Instance.new("TextLabel")
+sTitleL.Size = UDim2.new(1,0,1,0)
+sTitleL.BackgroundTransparency = 1
+sTitleL.Text = "🎯  PS99 Sniper"
+sTitleL.TextColor3 = WHITE
+sTitleL.Font = Enum.Font.GothamBold
+sTitleL.TextSize = 13
+sTitleL.Parent = sBar
 
-local sTitle = Instance.new("TextLabel")
-sTitle.Size = UDim2.new(1,0,1,0)
-sTitle.BackgroundTransparency = 1
-sTitle.Text = "🎯  PS99 Sniper · Aktif"
-sTitle.TextColor3 = WHITE
-sTitle.Font = Enum.Font.GothamBold
-sTitle.TextSize = 13
-sTitle.Parent = sBar
+local sItemL   = mkLabel(SF, "🔍  Item: —",         44, WHITE)
+local sPriceL  = mkLabel(SF, "💎  Max: —",           66, WHITE)
+local sStatusL = mkLabel(SF, "🔄  Başlatılıyor...", 92,  Color3.fromRGB(180,180,255))
+local sBoughtL = mkLabel(SF, "✅  Alınan: 0",        116, GREEN, true)
+local sServerL = mkLabel(SF, "🌐  Server hop: 0",    138, GREY)
+local stopBtn  = mkBtn(SF, "⏹  DURDUR", RED, 164, 32)
 
-local function sLabel(txt, color, posY, bold)
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(1,-16,0,22)
-    l.Position = UDim2.new(0,8,0,posY)
-    l.BackgroundTransparency = 1
-    l.Text = txt
-    l.TextSize = 12
-    l.TextColor3 = color
-    l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.Parent = SF
-    return l
+local TRADE_KEYWORDS = {"trade","listing","market","shop","buy","purchase","offer","plaza"}
+
+local function isTradeRelated(name)
+    local n = name:lower()
+    for _, k in ipairs(TRADE_KEYWORDS) do
+        if n:find(k) then return true end
+    end
+    return false
 end
 
-local sItemLbl   = sLabel("🔍  Item: —",     GREY,  44, false)
-local sPriceLbl  = sLabel("💎  Max: —",      GREY,  66, false)
-local sStatusLbl = sLabel("⏸  Bekleniyor",  Color3.fromRGB(180,180,255), 92, false)
-local sBoughtLbl = sLabel("✅  Alınan: 0",   GREEN, 116, true)
-
-local stopBtn = Instance.new("TextButton")
-stopBtn.Size = UDim2.new(1,-16,0,32)
-stopBtn.Position = UDim2.new(0,8,0,150)
-stopBtn.BackgroundColor3 = RED
-stopBtn.TextColor3 = WHITE
-stopBtn.Font = Enum.Font.GothamBold
-stopBtn.TextSize = 13
-stopBtn.Text = "⏹  DURDUR"
-stopBtn.Parent = SF
-corner(stopBtn, 7)
-
--- ══════════════════════════════════
---  SNIPER CORE
--- ══════════════════════════════════
-local running    = false
-local buyCount   = 0
-local lastBuyMap = {}
-local CFG        = {}
-local GetListings, BuyTrade
-
-local function findRemote(name)
-    local Rem = RS:FindFirstChild("Remotes")
-    if not Rem then return nil end
-    local direct = Rem:FindFirstChild(name)
-    if direct then return direct end
-    for _, v in ipairs(Rem:GetChildren()) do
-        if v.Name:lower():find(name:lower()) then return v end
-    end
+local function tryInvoke(remote)
+    if not remote:IsA("RemoteFunction") then return nil end
+    local ok, result = pcall(function() return remote:InvokeServer() end)
+    if ok and type(result) == "table" and #result > 0 then return result end
     return nil
 end
 
+local function findWorkingRemote()
+    local candidates = {}
+    for _, v in ipairs(RS:GetDescendants()) do
+        if v:IsA("RemoteFunction") then
+            table.insert(candidates, isTradeRelated(v.Name) and 1 or 2, v)
+        end
+    end
+    for _, remote in ipairs(candidates) do
+        local result = tryInvoke(remote)
+        if result then return remote, result end
+    end
+    return nil, nil
+end
+
+local running    = false
+local buyCount   = 0
+local hopCount   = 0
+local lastBuyMap = {}
+local CFG        = {}
+
 local function setStatus(msg, color)
-    sStatusLbl.Text = msg
-    sStatusLbl.TextColor3 = color or Color3.fromRGB(180,180,255)
+    sStatusL.Text = msg
+    sStatusL.TextColor3 = color or Color3.fromRGB(180,180,255)
+end
+
+local function hopServer()
+    hopCount = hopCount + 1
+    sServerL.Text = "🌐  Server hop: "..hopCount
+    setStatus("🚀  Hop ediliyor...", Color3.fromRGB(255,200,80))
+    task.wait(0.5)
+    pcall(function() TS:Teleport(game.PlaceId, LP) end)
 end
 
 local function tryBuy(listing)
-    local id = tostring(listing.TradeId or listing.Id or listing.id or "")
-    if lastBuyMap[id] then return false end
+    local id = tostring(listing.TradeId or listing.Id or listing.id or listing.tradeId or "")
+    if lastBuyMap[id] and id ~= "" then return false end
     lastBuyMap[id] = true
-    pcall(function() BuyTrade:FireServer(listing) end)
-    pcall(function() BuyTrade:FireServer(id) end)
-    return true
-end
-
-local function matchItem(name)
-    if CFG.ExactMatch then
-        return name:lower() == CFG.TargetItem:lower()
-    else
-        return name:lower():find(CFG.TargetItem:lower(), 1, true) ~= nil
+    for _, v in ipairs(RS:GetDescendants()) do
+        if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+            local n = v.Name:lower()
+            if n:find("buy") or n:find("purchase") or n:find("accept") then
+                pcall(function()
+                    if v:IsA("RemoteFunction") then v:InvokeServer(listing)
+                    else v:FireServer(listing) end
+                end)
+                pcall(function()
+                    if v:IsA("RemoteFunction") then v:InvokeServer(id)
+                    else v:FireServer(id) end
+                end)
+                return true
+            end
+        end
     end
+    return false
 end
 
 local function scanLoop()
-    GetListings = findRemote("GetTradeListings") or findRemote("TradingGetListings") or findRemote("GetListings")
-    BuyTrade    = findRemote("BuyTrade") or findRemote("PurchaseTrade") or findRemote("TradeBuy")
+    setStatus("🔍  Remotlar taranıyor...", Color3.fromRGB(255,200,80))
 
-    if not GetListings or not BuyTrade then
-        setStatus("⚠️ Remote yok — Trading Plaza'da mısın?", RED)
-        running = false
+    local listingRemote = findWorkingRemote()
+
+    if not listingRemote then
+        if hopEnabled then
+            hopServer()
+        else
+            setStatus("⚠️  Remote bulunamadı", RED)
+            running = false
+        end
         return
     end
 
+    setStatus("✅  "..listingRemote.Name.." bulundu", GREEN)
+    task.wait(0.3)
+
     while running do
-        setStatus("🔄  Taranıyor...", Color3.fromRGB(180,180,255))
         local ok, result = pcall(function()
-            if GetListings:IsA("RemoteFunction") then
-                return GetListings:InvokeServer()
-            end
-            return nil
+            return listingRemote:InvokeServer()
         end)
-        if ok and result and type(result) == "table" then
+
+        if ok and result and type(result) == "table" and #result > 0 then
+            local found = false
             for _, listing in ipairs(result) do
-                local itemName = tostring(listing.ItemName or listing.Name or listing.item or listing.petName or "")
-                local price    = tonumber(listing.Price or listing.GemPrice or listing.price or listing.gems) or math.huge
-                if matchItem(itemName) and price <= CFG.MaxPrice then
+                local itemName = tostring(
+                    listing.ItemName or listing.Name or listing.name or
+                    listing.item or listing.petName or listing.PetName or ""
+                )
+                local price = tonumber(
+                    listing.Price or listing.GemPrice or listing.price or
+                    listing.gems or listing.Gems or listing.cost or 0
+                ) or 0
+
+                if itemName:lower():find(CFG.TargetItem:lower(), 1, true) and price > 0 and price <= CFG.MaxPrice then
+                    found = true
                     setStatus("🎯 BULUNDU: "..itemName.." @ "..tostring(price), GREEN)
                     if tryBuy(listing) then
                         buyCount = buyCount + 1
-                        sBoughtLbl.Text = "✅  Alınan: "..buyCount
+                        sBoughtL.Text = "✅  Alınan: "..buyCount
                     end
                 end
             end
+
+            if not found then
+                setStatus("🔄  "..#result.." listing — yok", GREY)
+                if hopEnabled then hopServer(); return end
+            end
         else
-            setStatus("📭  Sonuç yok / farklı format", GREY)
+            setStatus("📭  Liste boş", GREY)
+            if hopEnabled then hopServer(); return end
         end
+
         task.wait(0.8)
     end
 end
 
--- ══════════════════════════════════
---  BUTONLAR
--- ══════════════════════════════════
 startBtn.MouseButton1Click:Connect(function()
     local itemText = itemInput.Text:match("^%s*(.-)%s*$")
     local maxPrice = tonumber(priceInput.Text)
-    if itemText == "" then
-        itemInput.PlaceholderText = "⚠️ Item adı gir!"
-        return
-    end
-    if not maxPrice then
-        priceInput.Text = ""
-        priceInput.PlaceholderText = "⚠️ Sayı gir!"
-        return
-    end
+    if itemText == "" then itemInput.PlaceholderText = "⚠️ Item adı gir!"; return end
+    if not maxPrice then priceInput.Text = ""; priceInput.PlaceholderText = "⚠️ Sayı gir!"; return end
+
     CFG.TargetItem = itemText
     CFG.MaxPrice   = maxPrice
-    CFG.ExactMatch = exactMode
-    sItemLbl.Text  = "🔍  Item: "..itemText
-    sPriceLbl.Text = "💎  Max: "..tostring(maxPrice).." gems"
-    buyCount       = 0
-    lastBuyMap     = {}
-    sBoughtLbl.Text = "✅  Alınan: 0"
+    buyCount = 0; hopCount = 0; lastBuyMap = {}
+
+    sItemL.Text   = "🔍  Item: "..itemText
+    sPriceL.Text  = "💎  Max: "..tostring(maxPrice).." gems"
+    sBoughtL.Text = "✅  Alınan: 0"
+    sServerL.Text = "🌐  Server hop: 0"
+
     CF.Visible = false
     SF.Visible = true
     running = true
