@@ -1,4 +1,4 @@
--- PS99 Sniper · Full Clean · LO ♥
+-- PS99 Sniper · Hop-Persistent · LO ♥
 
 local RS   = game:GetService("ReplicatedStorage")
 local TS   = game:GetService("TeleportService")
@@ -12,7 +12,6 @@ local YELLOW = Color3.fromRGB(255, 210, 60)
 local WHITE  = Color3.new(1,1,1)
 local GREY   = Color3.fromRGB(160, 160, 170)
 
--- Trading Plaza PlaceId'yi kaydet (scripti Trading Plaza'dayken çalıştır)
 if not _G.PS99_PlaceId then
     _G.PS99_PlaceId = game.PlaceId
 end
@@ -24,10 +23,17 @@ local function corner(p, r)
 end
 
 local SG = Instance.new("ScreenGui")
-SG.Name = "PS99Sniper"
+SG.Name       = "PS99Sniper"
 SG.ResetOnSpawn = false
+SG.DisplayOrder = 999
 pcall(function() SG.Parent = game:GetService("CoreGui") end)
 if not SG.Parent then SG.Parent = LP:WaitForChild("PlayerGui") end
+
+-- protect_gui varsa kullan (Synapse / KRNL vb.)
+pcall(function()
+    if syn then syn.protect_gui(SG)
+    elseif protect_gui then protect_gui(SG) end
+end)
 
 local function mkLabel(par, txt, posY, color, bold, size, wrap)
     local l = Instance.new("TextLabel")
@@ -98,12 +104,12 @@ cBar.BorderSizePixel = 0
 cBar.Parent = CF
 corner(cBar,12)
 
-local cFix = Instance.new("Frame")
-cFix.Size = UDim2.new(1,0,0,12)
-cFix.Position = UDim2.new(0,0,1,-12)
-cFix.BackgroundColor3 = PURPLE
-cFix.BorderSizePixel = 0
-cFix.Parent = cBar
+local cBarFix = Instance.new("Frame")
+cBarFix.Size = UDim2.new(1,0,0,12)
+cBarFix.Position = UDim2.new(0,0,1,-12)
+cBarFix.BackgroundColor3 = PURPLE
+cBarFix.BorderSizePixel = 0
+cBarFix.Parent = cBar
 
 local cTitle = Instance.new("TextLabel")
 cTitle.Size = UDim2.new(1,0,1,0)
@@ -119,7 +125,6 @@ local itemInput = mkInput(CF, "örn: Treat Magnet", 64)
 mkLabel(CF, "Maksimum Fiyat (Gems)", 104)
 local priceInput = mkInput(CF, "örn: 300000", 124)
 mkLabel(CF, "⚠️  Bulunca ses + ekranda gösterir, sen alırsın", 165, YELLOW, false, 10, true)
-
 local startBtn = mkBtn(CF, "▶  SNIPER BAŞLAT", PURPLE, 193, 36)
 
 -- ══════════════════════════════════
@@ -157,12 +162,12 @@ sTitleL.Font = Enum.Font.GothamBold
 sTitleL.TextSize = 13
 sTitleL.Parent = sBar
 
-local sItemL   = mkLabel(SF, "🔍  Item: —",          44, WHITE)
-local sPriceL  = mkLabel(SF, "💎  Max: —",            66, WHITE)
-local sStatusL = mkLabel(SF, "🔄  Başlatılıyor...",  90,  Color3.fromRGB(180,180,255))
-local sFoundL  = mkLabel(SF, "",                      112, GREEN, true, 12, true)
+local sItemL   = mkLabel(SF, "🔍  Item: —",         44, WHITE)
+local sPriceL  = mkLabel(SF, "💎  Max: —",           66, WHITE)
+local sStatusL = mkLabel(SF, "🔄  Başlatılıyor...", 90,  Color3.fromRGB(180,180,255))
+local sFoundL  = mkLabel(SF, "",                     112, GREEN, true, 12, true)
 sFoundL.Size   = UDim2.new(1,-16,0,36)
-local sServerL = mkLabel(SF, "🌐  Hop: 0",            152, GREY)
+local sServerL = mkLabel(SF, "🌐  Hop: 0",           152, GREY)
 local stopBtn  = mkBtn(SF, "⏹  DURDUR", RED, 170, 32)
 
 -- ══════════════════════════════════
@@ -181,8 +186,8 @@ local function playAlert()
     pcall(function()
         local s = Instance.new("Sound")
         s.SoundId = "rbxassetid://131961136"
-        s.Volume = 1
-        s.Parent = workspace
+        s.Volume  = 1
+        s.Parent  = workspace
         s:Play()
         game:GetService("Debris"):AddItem(s, 3)
     end)
@@ -192,8 +197,18 @@ local function hopServer()
     hopCount = hopCount + 1
     sServerL.Text = "🌐  Hop: "..hopCount
     setStatus("🚀  Hop ediliyor...", YELLOW)
+
+    -- Durumu teleport'tan önce _G'ye yaz — reinject sonrası kaldığı yerden devam eder
+    _G.PS99_Config = {
+        TargetItem  = CFG.TargetItem,
+        MaxPrice    = CFG.MaxPrice,
+        HopCount    = hopCount,
+        AutoResume  = true,
+    }
+
     task.wait(0.5)
     pcall(function()
+        TS:SetTeleportGui(SG)          -- GUI yükleme ekranında görünür kalsın
         TS:Teleport(_G.PS99_PlaceId, LP)
     end)
 end
@@ -213,7 +228,7 @@ end
 local function scanLoop()
     setStatus("🔍  Remote aranıyor...", YELLOW)
 
-    local listingRemote, firstResult = findListingRemote()
+    local listingRemote = findListingRemote()
 
     if not listingRemote then
         setStatus("⚠️  Remote yok — hop", RED)
@@ -266,6 +281,32 @@ local function scanLoop()
     end
 end
 
+local function startSniper(item, maxPrice, fromHop)
+    CFG.TargetItem = item
+    CFG.MaxPrice   = maxPrice
+
+    sItemL.Text   = "🔍  Item: "..item
+    sPriceL.Text  = "💎  Max: "..tostring(maxPrice).." gems"
+    sFoundL.Text  = ""
+    sServerL.Text = "🌐  Hop: "..hopCount
+
+    CF.Visible = false
+    SF.Visible = true
+    running    = true
+    task.spawn(scanLoop)
+end
+
+-- ══════════════════════════════════
+--  AUTO-RESUME (hop sonrası reinject)
+-- ══════════════════════════════════
+if _G.PS99_Config and _G.PS99_Config.AutoResume then
+    local saved = _G.PS99_Config
+    _G.PS99_Config.AutoResume = false   -- sonsuz döngüyü kır
+
+    hopCount = saved.HopCount or 0
+    startSniper(saved.TargetItem, saved.MaxPrice, true)
+end
+
 -- ══════════════════════════════════
 --  BUTONLAR
 -- ══════════════════════════════════
@@ -282,27 +323,17 @@ startBtn.MouseButton1Click:Connect(function()
         return
     end
 
-    CFG.TargetItem = itemText
-    CFG.MaxPrice   = maxPrice
-    hopCount       = 0
-
-    sItemL.Text   = "🔍  Item: "..itemText
-    sPriceL.Text  = "💎  Max: "..tostring(maxPrice).." gems"
-    sFoundL.Text  = ""
-    sServerL.Text = "🌐  Hop: 0"
-
-    CF.Visible = false
-    SF.Visible = true
-    running = true
-    task.spawn(scanLoop)
+    hopCount = 0
+    startSniper(itemText, maxPrice, false)
 end)
 
 stopBtn.MouseButton1Click:Connect(function()
     running = false
+    if _G.PS99_Config then _G.PS99_Config.AutoResume = false end
     SF.Visible = false
     CF.Visible = true
     itemInput.Text  = CFG.TargetItem or ""
     priceInput.Text = tostring(CFG.MaxPrice or "")
 end)
 
-print("[PS99 Sniper] Yüklendi ✓")
+print("[PS99 Sniper] Yüklendi ✓  |  hop-persistent aktif")
