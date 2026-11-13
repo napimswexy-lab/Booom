@@ -1,16 +1,21 @@
--- PS99 Sniper · Auto-Discover + Instant Hop · LO ♥
+-- PS99 Sniper · Full Clean · LO ♥
 
 local RS   = game:GetService("ReplicatedStorage")
 local TS   = game:GetService("TeleportService")
-local RunS = game:GetService("RunService")
 local LP   = game.Players.LocalPlayer
 
 local PURPLE = Color3.fromRGB(90, 45, 180)
 local DARK   = Color3.fromRGB(12, 12, 18)
 local GREEN  = Color3.fromRGB(80, 220, 130)
 local RED    = Color3.fromRGB(200, 60, 60)
+local YELLOW = Color3.fromRGB(255, 210, 60)
 local WHITE  = Color3.new(1,1,1)
 local GREY   = Color3.fromRGB(160, 160, 170)
+
+-- Trading Plaza PlaceId'yi kaydet (scripti Trading Plaza'dayken çalıştır)
+if not _G.PS99_PlaceId then
+    _G.PS99_PlaceId = game.PlaceId
+end
 
 local function corner(p, r)
     local c = Instance.new("UICorner")
@@ -24,40 +29,17 @@ SG.ResetOnSpawn = false
 pcall(function() SG.Parent = game:GetService("CoreGui") end)
 if not SG.Parent then SG.Parent = LP:WaitForChild("PlayerGui") end
 
-local CF = Instance.new("Frame")
-CF.Size = UDim2.new(0, 280, 0, 262)
-CF.Position = UDim2.new(0.5, -140, 0.5, -131)
-CF.BackgroundColor3 = DARK
-CF.BorderSizePixel = 0
-CF.Parent = SG
-corner(CF, 12)
-
-local cBar = Instance.new("Frame")
-cBar.Size = UDim2.new(1,0,0,36)
-cBar.BackgroundColor3 = PURPLE
-cBar.BorderSizePixel = 0
-cBar.Parent = CF
-corner(cBar, 12)
-
-local cTitle = Instance.new("TextLabel")
-cTitle.Size = UDim2.new(1,0,1,0)
-cTitle.BackgroundTransparency = 1
-cTitle.Text = "🎯  PS99 Sniper"
-cTitle.TextColor3 = WHITE
-cTitle.Font = Enum.Font.GothamBold
-cTitle.TextSize = 14
-cTitle.Parent = cBar
-
-local function mkLabel(par, txt, posY, color, bold)
+local function mkLabel(par, txt, posY, color, bold, size, wrap)
     local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(1,-16,0,20)
+    l.Size = UDim2.new(1,-16,0, wrap and 30 or 20)
     l.Position = UDim2.new(0,8,0,posY)
     l.BackgroundTransparency = 1
     l.Text = txt
-    l.TextSize = 11
+    l.TextSize = size or 11
     l.TextColor3 = color or GREY
     l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
     l.TextXAlignment = Enum.TextXAlignment.Left
+    l.TextWrapped = wrap or false
     l.Parent = par
     return l
 end
@@ -98,57 +80,53 @@ local function mkBtn(par, txt, color, posY, h)
     return b
 end
 
+-- ══════════════════════════════════
+--  CONFIG FRAME
+-- ══════════════════════════════════
+local CF = Instance.new("Frame")
+CF.Size = UDim2.new(0,280,0,235)
+CF.Position = UDim2.new(0.5,-140,0.5,-117)
+CF.BackgroundColor3 = DARK
+CF.BorderSizePixel = 0
+CF.Parent = SG
+corner(CF,12)
+
+local cBar = Instance.new("Frame")
+cBar.Size = UDim2.new(1,0,0,36)
+cBar.BackgroundColor3 = PURPLE
+cBar.BorderSizePixel = 0
+cBar.Parent = CF
+corner(cBar,12)
+
+local cFix = Instance.new("Frame")
+cFix.Size = UDim2.new(1,0,0,12)
+cFix.Position = UDim2.new(0,0,1,-12)
+cFix.BackgroundColor3 = PURPLE
+cFix.BorderSizePixel = 0
+cFix.Parent = cBar
+
+local cTitle = Instance.new("TextLabel")
+cTitle.Size = UDim2.new(1,0,1,0)
+cTitle.BackgroundTransparency = 1
+cTitle.Text = "🎯  PS99 Sniper"
+cTitle.TextColor3 = WHITE
+cTitle.Font = Enum.Font.GothamBold
+cTitle.TextSize = 14
+cTitle.Parent = cBar
+
 mkLabel(CF, "Item Adı", 44)
 local itemInput = mkInput(CF, "örn: Treat Magnet", 64)
 mkLabel(CF, "Maksimum Fiyat (Gems)", 104)
 local priceInput = mkInput(CF, "örn: 300000", 124)
-mkLabel(CF, "Server'da bulunamazsa otomatik hop", 164, Color3.fromRGB(120,120,140))
+mkLabel(CF, "⚠️  Bulunca ses + ekranda gösterir, sen alırsın", 165, YELLOW, false, 10, true)
 
-local hopEnabled = true
-local hopBg = Instance.new("Frame")
-hopBg.Size = UDim2.new(1,-16,0,28)
-hopBg.Position = UDim2.new(0,8,0,182)
-hopBg.BackgroundColor3 = Color3.fromRGB(25,25,35)
-hopBg.Parent = CF
-corner(hopBg,6)
+local startBtn = mkBtn(CF, "▶  SNIPER BAŞLAT", PURPLE, 193, 36)
 
-local hopOn = Instance.new("TextButton")
-hopOn.Size = UDim2.new(0.5,-2,1,0)
-hopOn.Position = UDim2.new(0,2,0,0)
-hopOn.BackgroundColor3 = GREEN
-hopOn.TextColor3 = Color3.fromRGB(10,10,10)
-hopOn.Font = Enum.Font.GothamBold
-hopOn.TextSize = 11
-hopOn.Text = "Hop: AÇIK"
-hopOn.Parent = hopBg
-corner(hopOn,5)
-
-local hopOff = Instance.new("TextButton")
-hopOff.Size = UDim2.new(0.5,-2,1,0)
-hopOff.Position = UDim2.new(0.5,0,0,0)
-hopOff.BackgroundColor3 = Color3.fromRGB(30,30,45)
-hopOff.TextColor3 = GREY
-hopOff.Font = Enum.Font.Gotham
-hopOff.TextSize = 11
-hopOff.Text = "Hop: KAPALI"
-hopOff.Parent = hopBg
-corner(hopOff,5)
-
-hopOn.MouseButton1Click:Connect(function()
-    hopEnabled = true
-    hopOn.BackgroundColor3 = GREEN; hopOn.TextColor3 = Color3.fromRGB(10,10,10); hopOn.Font = Enum.Font.GothamBold
-    hopOff.BackgroundColor3 = Color3.fromRGB(30,30,45); hopOff.TextColor3 = GREY; hopOff.Font = Enum.Font.Gotham
-end)
-hopOff.MouseButton1Click:Connect(function()
-    hopEnabled = false
-    hopOff.BackgroundColor3 = RED; hopOff.TextColor3 = WHITE; hopOff.Font = Enum.Font.GothamBold
-    hopOn.BackgroundColor3 = Color3.fromRGB(30,30,45); hopOn.TextColor3 = GREY; hopOn.Font = Enum.Font.Gotham
-end)
-
-local startBtn = mkBtn(CF, "▶  SNIPER BAŞLAT", PURPLE, 218, 36)
-
+-- ══════════════════════════════════
+--  STATUS FRAME
+-- ══════════════════════════════════
 local SF = Instance.new("Frame")
-SF.Size = UDim2.new(0, 265, 0, 210)
+SF.Size = UDim2.new(0,265,0,210)
 SF.Position = UDim2.new(0.5,-132,0.5,-105)
 SF.BackgroundColor3 = DARK
 SF.BorderSizePixel = 0
@@ -163,6 +141,13 @@ sBar.BorderSizePixel = 0
 sBar.Parent = SF
 corner(sBar,12)
 
+local sBarFix = Instance.new("Frame")
+sBarFix.Size = UDim2.new(1,0,0,12)
+sBarFix.Position = UDim2.new(0,0,1,-12)
+sBarFix.BackgroundColor3 = PURPLE
+sBarFix.BorderSizePixel = 0
+sBarFix.Parent = sBar
+
 local sTitleL = Instance.new("TextLabel")
 sTitleL.Size = UDim2.new(1,0,1,0)
 sTitleL.BackgroundTransparency = 1
@@ -172,102 +157,72 @@ sTitleL.Font = Enum.Font.GothamBold
 sTitleL.TextSize = 13
 sTitleL.Parent = sBar
 
-local sItemL   = mkLabel(SF, "🔍  Item: —",         44, WHITE)
-local sPriceL  = mkLabel(SF, "💎  Max: —",           66, WHITE)
-local sStatusL = mkLabel(SF, "🔄  Başlatılıyor...", 92,  Color3.fromRGB(180,180,255))
-local sBoughtL = mkLabel(SF, "✅  Alınan: 0",        116, GREEN, true)
-local sServerL = mkLabel(SF, "🌐  Server hop: 0",    138, GREY)
-local stopBtn  = mkBtn(SF, "⏹  DURDUR", RED, 164, 32)
+local sItemL   = mkLabel(SF, "🔍  Item: —",          44, WHITE)
+local sPriceL  = mkLabel(SF, "💎  Max: —",            66, WHITE)
+local sStatusL = mkLabel(SF, "🔄  Başlatılıyor...",  90,  Color3.fromRGB(180,180,255))
+local sFoundL  = mkLabel(SF, "",                      112, GREEN, true, 12, true)
+sFoundL.Size   = UDim2.new(1,-16,0,36)
+local sServerL = mkLabel(SF, "🌐  Hop: 0",            152, GREY)
+local stopBtn  = mkBtn(SF, "⏹  DURDUR", RED, 170, 32)
 
-local TRADE_KEYWORDS = {"trade","listing","market","shop","buy","purchase","offer","plaza"}
-
-local function isTradeRelated(name)
-    local n = name:lower()
-    for _, k in ipairs(TRADE_KEYWORDS) do
-        if n:find(k) then return true end
-    end
-    return false
-end
-
-local function tryInvoke(remote)
-    if not remote:IsA("RemoteFunction") then return nil end
-    local ok, result = pcall(function() return remote:InvokeServer() end)
-    if ok and type(result) == "table" and #result > 0 then return result end
-    return nil
-end
-
-local function findWorkingRemote()
-    local candidates = {}
-    for _, v in ipairs(RS:GetDescendants()) do
-        if v:IsA("RemoteFunction") then
-            table.insert(candidates, isTradeRelated(v.Name) and 1 or 2, v)
-        end
-    end
-    for _, remote in ipairs(candidates) do
-        local result = tryInvoke(remote)
-        if result then return remote, result end
-    end
-    return nil, nil
-end
-
-local running    = false
-local buyCount   = 0
-local hopCount   = 0
-local lastBuyMap = {}
-local CFG        = {}
+-- ══════════════════════════════════
+--  CORE
+-- ══════════════════════════════════
+local running  = false
+local hopCount = 0
+local CFG      = {}
 
 local function setStatus(msg, color)
     sStatusL.Text = msg
     sStatusL.TextColor3 = color or Color3.fromRGB(180,180,255)
 end
 
-local function hopServer()
-    hopCount = hopCount + 1
-    sServerL.Text = "🌐  Server hop: "..hopCount
-    setStatus("🚀  Hop ediliyor...", Color3.fromRGB(255,200,80))
-    task.wait(0.5)
-    pcall(function() TS:Teleport(game.PlaceId, LP) end)
+local function playAlert()
+    pcall(function()
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://131961136"
+        s.Volume = 1
+        s.Parent = workspace
+        s:Play()
+        game:GetService("Debris"):AddItem(s, 3)
+    end)
 end
 
-local function tryBuy(listing)
-    local id = tostring(listing.TradeId or listing.Id or listing.id or listing.tradeId or "")
-    if lastBuyMap[id] and id ~= "" then return false end
-    lastBuyMap[id] = true
+local function hopServer()
+    hopCount = hopCount + 1
+    sServerL.Text = "🌐  Hop: "..hopCount
+    setStatus("🚀  Hop ediliyor...", YELLOW)
+    task.wait(0.5)
+    pcall(function()
+        TS:Teleport(_G.PS99_PlaceId, LP)
+    end)
+end
+
+local function findListingRemote()
     for _, v in ipairs(RS:GetDescendants()) do
-        if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
-            local n = v.Name:lower()
-            if n:find("buy") or n:find("purchase") or n:find("accept") then
-                pcall(function()
-                    if v:IsA("RemoteFunction") then v:InvokeServer(listing)
-                    else v:FireServer(listing) end
-                end)
-                pcall(function()
-                    if v:IsA("RemoteFunction") then v:InvokeServer(id)
-                    else v:FireServer(id) end
-                end)
-                return true
+        if v:IsA("RemoteFunction") then
+            local ok, result = pcall(function() return v:InvokeServer() end)
+            if ok and type(result) == "table" and #result > 0 and type(result[1]) == "table" then
+                return v, result
             end
         end
     end
-    return false
+    return nil, nil
 end
 
 local function scanLoop()
-    setStatus("🔍  Remotlar taranıyor...", Color3.fromRGB(255,200,80))
+    setStatus("🔍  Remote aranıyor...", YELLOW)
 
-    local listingRemote = findWorkingRemote()
+    local listingRemote, firstResult = findListingRemote()
 
     if not listingRemote then
-        if hopEnabled then
-            hopServer()
-        else
-            setStatus("⚠️  Remote bulunamadı", RED)
-            running = false
-        end
+        setStatus("⚠️  Remote yok — hop", RED)
+        task.wait(0.5)
+        if running then hopServer() end
         return
     end
 
-    setStatus("✅  "..listingRemote.Name.." bulundu", GREEN)
+    setStatus("✅  "..listingRemote.Name, GREEN)
     task.wait(0.3)
 
     while running do
@@ -287,43 +242,54 @@ local function scanLoop()
                     listing.gems or listing.Gems or listing.cost or 0
                 ) or 0
 
-                if itemName:lower():find(CFG.TargetItem:lower(), 1, true) and price > 0 and price <= CFG.MaxPrice then
+                if itemName:lower():find(CFG.TargetItem:lower(), 1, true)
+                and price > 0 and price <= CFG.MaxPrice then
                     found = true
-                    setStatus("🎯 BULUNDU: "..itemName.." @ "..tostring(price), GREEN)
-                    if tryBuy(listing) then
-                        buyCount = buyCount + 1
-                        sBoughtL.Text = "✅  Alınan: "..buyCount
-                    end
+                    sFoundL.Text = "🎯 "..itemName.."\n💎 "..tostring(price).." gems — AL!"
+                    setStatus("🔔  BULUNDU — HEMEN AL!", GREEN)
+                    playAlert()
                 end
             end
 
             if not found then
-                setStatus("🔄  "..#result.." listing — yok", GREY)
-                if hopEnabled then hopServer(); return end
+                sFoundL.Text = ""
+                setStatus("🔄  "..#result.." listing — eşleşme yok", GREY)
+                if running then hopServer() return end
             end
         else
-            setStatus("📭  Liste boş", GREY)
-            if hopEnabled then hopServer(); return end
+            sFoundL.Text = ""
+            setStatus("📭  Boş — hop", GREY)
+            if running then hopServer() return end
         end
 
         task.wait(0.8)
     end
 end
 
+-- ══════════════════════════════════
+--  BUTONLAR
+-- ══════════════════════════════════
 startBtn.MouseButton1Click:Connect(function()
     local itemText = itemInput.Text:match("^%s*(.-)%s*$")
     local maxPrice = tonumber(priceInput.Text)
-    if itemText == "" then itemInput.PlaceholderText = "⚠️ Item adı gir!"; return end
-    if not maxPrice then priceInput.Text = ""; priceInput.PlaceholderText = "⚠️ Sayı gir!"; return end
+    if itemText == "" then
+        itemInput.PlaceholderText = "⚠️ Item adı gir!"
+        return
+    end
+    if not maxPrice then
+        priceInput.Text = ""
+        priceInput.PlaceholderText = "⚠️ Sayı gir!"
+        return
+    end
 
     CFG.TargetItem = itemText
     CFG.MaxPrice   = maxPrice
-    buyCount = 0; hopCount = 0; lastBuyMap = {}
+    hopCount       = 0
 
     sItemL.Text   = "🔍  Item: "..itemText
     sPriceL.Text  = "💎  Max: "..tostring(maxPrice).." gems"
-    sBoughtL.Text = "✅  Alınan: 0"
-    sServerL.Text = "🌐  Server hop: 0"
+    sFoundL.Text  = ""
+    sServerL.Text = "🌐  Hop: 0"
 
     CF.Visible = false
     SF.Visible = true
