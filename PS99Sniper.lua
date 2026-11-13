@@ -1,53 +1,32 @@
--- ╔══════════════════════════════════════════════════════╗
--- ║   Pet Simulator 99 — Trading Plaza Sniper            ║
--- ║   GUI Config · Arceus X Neo Mobile · LO build ♥     ║
--- ╚══════════════════════════════════════════════════════╝
+-- PS99 Sniper · Arceus X Neo Fix · LO build ♥
 
 local RS    = game:GetService("ReplicatedStorage")
 local RunS  = game:GetService("RunService")
 local Plrs  = game:GetService("Players")
 local LP    = Plrs.LocalPlayer
 
--- ══════════════════════════════════════
---   REMOTE KEŞİF
--- ══════════════════════════════════════
-local Remotes = RS:WaitForChild("Remotes", 10)
-assert(Remotes, "[Sniper] Remotes bulunamadı.")
-
-local function findRemote(name)
-    local r = Remotes:FindFirstChild(name)
-    if r then return r end
-    for _, v in ipairs(Remotes:GetChildren()) do
-        if v.Name:lower():find(name:lower()) then return v end
-    end
+-- Executor GUI parent — gethui() öncelikli
+local function getGuiParent()
+    if gethui then return gethui() end
+    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+    if ok and cg then return cg end
+    return LP:WaitForChild("PlayerGui")
 end
 
-local GetListings = findRemote("GetTradeListings") or findRemote("TradingGetListings") or findRemote("GetListings")
-local BuyTrade    = findRemote("BuyTrade")         or findRemote("PurchaseTrade")      or findRemote("TradeBuy")
+local PURPLE = Color3.fromRGB(90, 45, 180)
+local DARK   = Color3.fromRGB(12, 12, 18)
+local GREEN  = Color3.fromRGB(80, 220, 130)
+local RED    = Color3.fromRGB(200, 60, 60)
+local WHITE  = Color3.new(1,1,1)
+local GREY   = Color3.fromRGB(160, 160, 170)
 
--- ══════════════════════════════════════
---   GUI KURULUM
--- ══════════════════════════════════════
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name            = "PS99Sniper_LO"
-ScreenGui.ResetOnSpawn    = false
-ScreenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent          = LP:WaitForChild("PlayerGui")
-
-local PURPLE  = Color3.fromRGB(90, 45, 180)
-local DARK    = Color3.fromRGB(12, 12, 18)
-local GREEN   = Color3.fromRGB(80, 220, 130)
-local RED     = Color3.fromRGB(200, 60, 60)
-local WHITE   = Color3.new(1,1,1)
-local GREY    = Color3.fromRGB(160, 160, 170)
-
-local function corner(parent, radius)
+local function corner(p, r)
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius or 8)
-    c.Parent = parent
+    c.CornerRadius = UDim.new(0, r or 8)
+    c.Parent = p
 end
 
-local function label(parent, text, size, color, posY, bold)
+local function mklabel(parent, text, size, color, posY, bold)
     local l = Instance.new("TextLabel")
     l.Size = UDim2.new(1, -16, 0, 22)
     l.Position = UDim2.new(0, 8, 0, posY)
@@ -61,14 +40,13 @@ local function label(parent, text, size, color, posY, bold)
     return l
 end
 
-local function inputBox(parent, placeholder, posY)
+local function mkbox(parent, placeholder, posY)
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, -16, 0, 32)
     bg.Position = UDim2.new(0, 8, 0, posY)
     bg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     bg.Parent = parent
     corner(bg, 6)
-
     local tb = Instance.new("TextBox")
     tb.Size = UDim2.new(1, -12, 1, 0)
     tb.Position = UDim2.new(0, 6, 0, 0)
@@ -84,188 +62,202 @@ local function inputBox(parent, placeholder, posY)
     return tb
 end
 
-local function button(parent, text, color, posY, height)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -16, 0, height or 34)
-    btn.Position = UDim2.new(0, 8, 0, posY)
-    btn.BackgroundColor3 = color
-    btn.TextColor3 = WHITE
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
-    btn.Text = text
-    btn.Parent = parent
-    corner(btn, 7)
-    return btn
+local function mkbtn(parent, text, color, posY, h)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, -16, 0, h or 34)
+    b.Position = UDim2.new(0, 8, 0, posY)
+    b.BackgroundColor3 = color
+    b.TextColor3 = WHITE
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 13
+    b.Text = text
+    b.Parent = parent
+    corner(b, 7)
+    return b
 end
 
--- ══════════════════════════════════════
---   CONFIG PANEL (açılış ekranı)
--- ══════════════════════════════════════
-local ConfigFrame = Instance.new("Frame")
-ConfigFrame.Size = UDim2.new(0, 280, 0, 230)
-ConfigFrame.Position = UDim2.new(0.5, -140, 0.5, -115)
-ConfigFrame.BackgroundColor3 = DARK
-ConfigFrame.BorderSizePixel = 0
-ConfigFrame.Parent = ScreenGui
-corner(ConfigFrame, 12)
+-- ══════════════════════════════════
+--  SCREEN GUI
+-- ══════════════════════════════════
+local SG = Instance.new("ScreenGui")
+SG.Name = "PS99Sniper_LO"
+SG.ResetOnSpawn = false
+SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Başlık bar
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 36)
-titleBar.BackgroundColor3 = PURPLE
-titleBar.Parent = ConfigFrame
-corner(titleBar, 12)
+local ok2, err2 = pcall(function()
+    SG.Parent = getGuiParent()
+end)
+if not ok2 then
+    SG.Parent = LP:WaitForChild("PlayerGui")
+end
 
--- Alt köşeleri düzelt
-local titleFix = Instance.new("Frame")
-titleFix.Size = UDim2.new(1, 0, 0, 10)
-titleFix.Position = UDim2.new(0, 0, 1, -10)
-titleFix.BackgroundColor3 = PURPLE
-titleFix.BorderSizePixel = 0
-titleFix.Parent = titleBar
+-- ══════════════════════════════════
+--  CONFIG FRAME
+-- ══════════════════════════════════
+local CF = Instance.new("Frame")
+CF.Size = UDim2.new(0, 280, 0, 262)
+CF.Position = UDim2.new(0.5, -140, 0.5, -131)
+CF.BackgroundColor3 = DARK
+CF.BorderSizePixel = 0
+CF.Parent = SG
+corner(CF, 12)
 
-local titleLbl = Instance.new("TextLabel")
-titleLbl.Size = UDim2.new(1, 0, 1, 0)
-titleLbl.BackgroundTransparency = 1
-titleLbl.Text = "🎯  PS99 Sniper"
-titleLbl.TextColor3 = WHITE
-titleLbl.Font = Enum.Font.GothamBold
-titleLbl.TextSize = 14
-titleLbl.Parent = titleBar
+local cBar = Instance.new("Frame")
+cBar.Size = UDim2.new(1, 0, 0, 36)
+cBar.BackgroundColor3 = PURPLE
+cBar.BorderSizePixel = 0
+cBar.Parent = CF
+corner(cBar, 12)
 
-label(ConfigFrame, "Item Adı", 11, GREY, 44)
-local itemInput = inputBox(ConfigFrame, "örn: Treat Magnet", 62)
+local cFix = Instance.new("Frame")
+cFix.Size = UDim2.new(1, 0, 0, 12)
+cFix.Position = UDim2.new(0, 0, 1, -12)
+cFix.BackgroundColor3 = PURPLE
+cFix.BorderSizePixel = 0
+cFix.Parent = cBar
 
-label(ConfigFrame, "Maksimum Fiyat (Gems)", 11, GREY, 102)
-local priceInput = inputBox(ConfigFrame, "örn: 300000", 120)
+local cTitle = Instance.new("TextLabel")
+cTitle.Size = UDim2.new(1, 0, 1, 0)
+cTitle.BackgroundTransparency = 1
+cTitle.Text = "🎯  PS99 Sniper"
+cTitle.TextColor3 = WHITE
+cTitle.Font = Enum.Font.GothamBold
+cTitle.TextSize = 14
+cTitle.Parent = cBar
 
-label(ConfigFrame, "Eşleşme Tipi", 11, GREY, 160)
+mklabel(CF, "Item Adı", 11, GREY, 44)
+local itemInput  = mkbox(CF, "örn: Treat Magnet", 62)
 
--- Exact / Fuzzy toggle
-local toggleFrame = Instance.new("Frame")
-toggleFrame.Size = UDim2.new(1, -16, 0, 28)
-toggleFrame.Position = UDim2.new(0, 8, 0, 178)
-toggleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-toggleFrame.Parent = ConfigFrame
-corner(toggleFrame, 6)
+mklabel(CF, "Maksimum Fiyat (Gems)", 11, GREY, 102)
+local priceInput = mkbox(CF, "örn: 300000", 120)
+
+mklabel(CF, "Eşleşme Tipi", 11, GREY, 160)
+
+local tFrame = Instance.new("Frame")
+tFrame.Size = UDim2.new(1, -16, 0, 28)
+tFrame.Position = UDim2.new(0, 8, 0, 178)
+tFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+tFrame.Parent = CF
+corner(tFrame, 6)
 
 local exactMode = false
 
-local fuzzyBtn = Instance.new("TextButton")
-fuzzyBtn.Size = UDim2.new(0.5, -2, 1, 0)
-fuzzyBtn.Position = UDim2.new(0, 2, 0, 0)
-fuzzyBtn.BackgroundColor3 = PURPLE
-fuzzyBtn.TextColor3 = WHITE
-fuzzyBtn.Font = Enum.Font.GothamBold
-fuzzyBtn.TextSize = 11
-fuzzyBtn.Text = "İçerik Ara"
-fuzzyBtn.Parent = toggleFrame
-corner(fuzzyBtn, 5)
+local fuzzyB = Instance.new("TextButton")
+fuzzyB.Size = UDim2.new(0.5, -2, 1, 0)
+fuzzyB.Position = UDim2.new(0, 2, 0, 0)
+fuzzyB.BackgroundColor3 = PURPLE
+fuzzyB.TextColor3 = WHITE
+fuzzyB.Font = Enum.Font.GothamBold
+fuzzyB.TextSize = 11
+fuzzyB.Text = "İçerik Ara"
+fuzzyB.Parent = tFrame
+corner(fuzzyB, 5)
 
-local exactBtn = Instance.new("TextButton")
-exactBtn.Size = UDim2.new(0.5, -2, 1, 0)
-exactBtn.Position = UDim2.new(0.5, 0, 0, 0)
-exactBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-exactBtn.TextColor3 = GREY
-exactBtn.Font = Enum.Font.Gotham
-exactBtn.TextSize = 11
-exactBtn.Text = "Tam Eşleşme"
-exactBtn.Parent = toggleFrame
-corner(exactBtn, 5)
+local exactB = Instance.new("TextButton")
+exactB.Size = UDim2.new(0.5, -2, 1, 0)
+exactB.Position = UDim2.new(0.5, 0, 0, 0)
+exactB.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+exactB.TextColor3 = GREY
+exactB.Font = Enum.Font.Gotham
+exactB.TextSize = 11
+exactB.Text = "Tam Eşleşme"
+exactB.Parent = tFrame
+corner(exactB, 5)
 
-fuzzyBtn.MouseButton1Click:Connect(function()
+fuzzyB.MouseButton1Click:Connect(function()
     exactMode = false
-    fuzzyBtn.BackgroundColor3 = PURPLE
-    fuzzyBtn.TextColor3 = WHITE
-    fuzzyBtn.Font = Enum.Font.GothamBold
-    exactBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-    exactBtn.TextColor3 = GREY
-    exactBtn.Font = Enum.Font.Gotham
+    fuzzyB.BackgroundColor3 = PURPLE; fuzzyB.TextColor3 = WHITE; fuzzyB.Font = Enum.Font.GothamBold
+    exactB.BackgroundColor3 = Color3.fromRGB(30,30,45); exactB.TextColor3 = GREY; exactB.Font = Enum.Font.Gotham
 end)
-
-exactBtn.MouseButton1Click:Connect(function()
+exactB.MouseButton1Click:Connect(function()
     exactMode = true
-    exactBtn.BackgroundColor3 = PURPLE
-    exactBtn.TextColor3 = WHITE
-    exactBtn.Font = Enum.Font.GothamBold
-    fuzzyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-    fuzzyBtn.TextColor3 = GREY
-    fuzzyBtn.Font = Enum.Font.Gotham
+    exactB.BackgroundColor3 = PURPLE; exactB.TextColor3 = WHITE; exactB.Font = Enum.Font.GothamBold
+    fuzzyB.BackgroundColor3 = Color3.fromRGB(30,30,45); fuzzyB.TextColor3 = GREY; fuzzyB.Font = Enum.Font.Gotham
 end)
 
--- ══════════════════════════════════════
---   STATUS PANEL (sniper çalışırken)
--- ══════════════════════════════════════
-local StatusFrame = Instance.new("Frame")
-StatusFrame.Size = UDim2.new(0, 260, 0, 180)
-StatusFrame.Position = UDim2.new(0, 10, 0.5, -90)
-StatusFrame.BackgroundColor3 = DARK
-StatusFrame.BorderSizePixel = 0
-StatusFrame.Visible = false
-StatusFrame.Parent = ScreenGui
-corner(StatusFrame, 12)
+local startBtn = mkbtn(CF, "▶  SNIPER BAŞLAT", GREEN, 218, 36)
+
+-- ══════════════════════════════════
+--  STATUS FRAME
+-- ══════════════════════════════════
+local SF = Instance.new("Frame")
+SF.Size = UDim2.new(0, 260, 0, 185)
+SF.Position = UDim2.new(0, 10, 0.5, -92)
+SF.BackgroundColor3 = DARK
+SF.BorderSizePixel = 0
+SF.Visible = false
+SF.Parent = SG
+corner(SF, 12)
 
 local sBar = Instance.new("Frame")
 sBar.Size = UDim2.new(1, 0, 0, 36)
 sBar.BackgroundColor3 = PURPLE
-sBar.Parent = StatusFrame
+sBar.BorderSizePixel = 0
+sBar.Parent = SF
 corner(sBar, 12)
 
 local sBarFix = Instance.new("Frame")
-sBarFix.Size = UDim2.new(1, 0, 0, 10)
-sBarFix.Position = UDim2.new(0, 0, 1, -10)
+sBarFix.Size = UDim2.new(1, 0, 0, 12)
+sBarFix.Position = UDim2.new(0, 0, 1, -12)
 sBarFix.BackgroundColor3 = PURPLE
 sBarFix.BorderSizePixel = 0
 sBarFix.Parent = sBar
 
-local sTitleLbl = Instance.new("TextLabel")
-sTitleLbl.Size = UDim2.new(1, 0, 1, 0)
-sTitleLbl.BackgroundTransparency = 1
-sTitleLbl.Text = "🎯  PS99 Sniper · Aktif"
-sTitleLbl.TextColor3 = WHITE
-sTitleLbl.Font = Enum.Font.GothamBold
-sTitleLbl.TextSize = 13
-sTitleLbl.Parent = sBar
+local sTitle = Instance.new("TextLabel")
+sTitle.Size = UDim2.new(1, 0, 1, 0)
+sTitle.BackgroundTransparency = 1
+sTitle.Text = "🎯  PS99 Sniper · Aktif"
+sTitle.TextColor3 = WHITE
+sTitle.Font = Enum.Font.GothamBold
+sTitle.TextSize = 13
+sTitle.Parent = sBar
 
-local sItemLbl   = label(StatusFrame, "🔍  Item: —",    11, GREY,  44)
-local sPriceLbl  = label(StatusFrame, "💎  Max: —",     11, GREY,  64)
-local sStatusLbl = label(StatusFrame, "⏸  Bekleniyor", 11, Color3.fromRGB(180,180,255), 90)
-local sBoughtLbl = label(StatusFrame, "✅  Alınan: 0",  12, GREEN, 112, true)
+local sItemLbl   = mklabel(SF, "🔍  Item: —",     11, GREY,  44)
+local sPriceLbl  = mklabel(SF, "💎  Max: —",      11, GREY,  64)
+local sStatusLbl = mklabel(SF, "⏸  Bekleniyor",  11, Color3.fromRGB(180,180,255), 90)
+local sBoughtLbl = mklabel(SF, "✅  Alınan: 0",   12, GREEN, 112, true)
+local stopBtn    = mkbtn(SF, "⏹  DURDUR", RED, 148, 30)
 
-local stopBtn = button(StatusFrame, "⏹  DURDUR", RED, 142, 30)
-
--- Sürükleme (status panel)
-local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
-StatusFrame.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true; dragStart = inp.Position; startPos = StatusFrame.Position
-        inp.Changed:Connect(function()
-            if inp.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
+-- Sürükleme
+local drag, dInput, dStart, dPos = false, nil, nil, nil
+SF.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+        drag=true; dStart=i.Position; dPos=SF.Position
+        i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then drag=false end end)
     end
 end)
-StatusFrame.InputChanged:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch or inp.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = inp
-    end
+SF.InputChanged:Connect(function(i)
+    if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseMovement then dInput=i end
 end)
 RunS.RenderStepped:Connect(function()
-    if dragging and dragInput then
-        local d = dragInput.Position - dragStart
-        StatusFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+    if drag and dInput then
+        local d = dInput.Position - dStart
+        SF.Position = UDim2.new(dPos.X.Scale, dPos.X.Offset+d.X, dPos.Y.Scale, dPos.Y.Offset+d.Y)
     end
 end)
 
--- ══════════════════════════════════════
---   SNIPER CORE
--- ══════════════════════════════════════
+-- ══════════════════════════════════
+--  SNIPER CORE
+-- ══════════════════════════════════
 local running    = false
 local buyCount   = 0
 local lastBuyMap = {}
 local CFG        = {}
 
+local GetListings, BuyTrade
+
+local function findRemote(name)
+    local Rem = RS:FindFirstChild("Remotes")
+    if not Rem then return nil end
+    local r = Rem:FindFirstChild(name)
+    if r then return r end
+    for _, v in ipairs(Rem:GetChildren()) do
+        if v.Name:lower():find(name:lower()) then return v end
+    end
+end
+
 local function setStatus(msg, color)
-    sStatusLbl.Text       = msg
+    sStatusLbl.Text = msg
     sStatusLbl.TextColor3 = color or Color3.fromRGB(180,180,255)
 end
 
@@ -287,79 +279,74 @@ local function matchItem(name)
 end
 
 local function scanLoop()
+    -- Remote'ları burada bul (GUI zaten açık, hata varsa status'ta göster)
+    GetListings = findRemote("GetTradeListings") or findRemote("TradingGetListings") or findRemote("GetListings")
+    BuyTrade    = findRemote("BuyTrade") or findRemote("PurchaseTrade") or findRemote("TradeBuy")
+
+    if not GetListings or not BuyTrade then
+        setStatus("⚠️ Remote bulunamadı — Trading Plaza'da mısın?", RED)
+        running = false
+        return
+    end
+
     while running do
         setStatus("🔄  Taranıyor...", Color3.fromRGB(180,180,255))
         local ok, result = pcall(function()
-            if GetListings and GetListings:IsA("RemoteFunction") then
+            if GetListings:IsA("RemoteFunction") then
                 return GetListings:InvokeServer()
             end
         end)
         if ok and result and type(result) == "table" then
             for _, listing in ipairs(result) do
                 local itemName = listing.ItemName or listing.Name or listing.item or listing.petName or ""
-                local price    = listing.Price    or listing.GemPrice or listing.price or listing.gems or math.huge
+                local price    = listing.Price or listing.GemPrice or listing.price or listing.gems or math.huge
                 if matchItem(tostring(itemName)) and tonumber(price) <= CFG.MaxPrice then
-                    setStatus("🎯 BULUNDU: " .. tostring(itemName) .. " @ " .. tostring(price), GREEN)
+                    setStatus("🎯 BULUNDU: "..tostring(itemName).." @ "..tostring(price), GREEN)
                     if tryBuy(listing) then
                         buyCount = buyCount + 1
-                        sBoughtLbl.Text = "✅  Alınan: " .. buyCount
-                        print(string.format("[Sniper] ALINDI → %s | %s gems", tostring(itemName), tostring(price)))
+                        sBoughtLbl.Text = "✅  Alınan: "..buyCount
                     end
                 end
             end
         else
-            setStatus("📭  Liste boş / format uyumsuz", GREY)
+            setStatus("📭  Liste boş / format farklı", GREY)
         end
         task.wait(0.8)
     end
 end
 
--- ══════════════════════════════════════
---   BAŞLAT BUTONU (config panel)
--- ══════════════════════════════════════
-local startBtn = button(ConfigFrame, "▶  SNIPER BAŞLAT", GREEN, 214, 36)
--- Paneli büyüt
-ConfigFrame.Size = UDim2.new(0, 280, 0, 258)
-
+-- ══════════════════════════════════
+--  BUTONLAR
+-- ══════════════════════════════════
 startBtn.MouseButton1Click:Connect(function()
     local itemText  = itemInput.Text:match("^%s*(.-)%s*$")
     local priceText = priceInput.Text:match("^%s*(.-)%s*$")
     local maxPrice  = tonumber(priceText)
-
-    if itemText == "" then
-        itemInput.PlaceholderText = "⚠️ Item adı gir!"
-        return
-    end
-    if not maxPrice then
-        priceInput.PlaceholderText = "⚠️ Sayı gir!"
-        priceInput.Text = ""
-        return
-    end
+    if itemText == "" then itemInput.PlaceholderText = "⚠️ Item adı gir!"; return end
+    if not maxPrice then priceInput.PlaceholderText = "⚠️ Sayı gir!"; priceInput.Text = ""; return end
 
     CFG.TargetItem = itemText
     CFG.MaxPrice   = maxPrice
     CFG.ExactMatch = exactMode
 
-    sItemLbl.Text  = "🔍  Item: " .. itemText
-    sPriceLbl.Text = "💎  Max: " .. tostring(maxPrice) .. " gems"
+    sItemLbl.Text  = "🔍  Item: "..itemText
+    sPriceLbl.Text = "💎  Max: "..tostring(maxPrice).." gems"
     buyCount       = 0
     lastBuyMap     = {}
     sBoughtLbl.Text = "✅  Alınan: 0"
 
-    ConfigFrame.Visible = false
-    StatusFrame.Visible = true
-
+    CF.Visible = false
+    SF.Visible = true
     running = true
     task.spawn(scanLoop)
 end)
 
 stopBtn.MouseButton1Click:Connect(function()
     running = false
-    StatusFrame.Visible = false
-    ConfigFrame.Visible = true
+    SF.Visible = false
+    CF.Visible = true
     itemInput.Text  = CFG.TargetItem or ""
     priceInput.Text = tostring(CFG.MaxPrice or "")
-    setStatus("⏸  Durduruldu", GREY)
 end)
 
-print("[PS99 Sniper] GUI yüklendi ✓")
+print("[PS99 Sniper] Yüklendi ✓")
